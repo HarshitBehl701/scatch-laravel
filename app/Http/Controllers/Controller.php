@@ -25,6 +25,10 @@ abstract class Controller
       'cart' =>  'pages.adminPages.commonPages.productList',
       'whislist' =>  'pages.adminPages.commonPages.productList',
       'product-details' =>  'pages.adminPages.commonPages.productDetails',
-      'add-product' =>  'pages.adminPages.sellerAdminPages.addProduct',
+      'all-products' =>  'pages.adminPages.commonPages.productList',
+      'live-products' =>  'pages.adminPages.commonPages.productList',
+      'manage-orders' =>  'pages.adminPages.commonPages.productList',
+      'add-product' =>  'pages.adminPages.sellerAdminPages.addOrEditProduct',
+      'edit-product' =>  'pages.adminPages.sellerAdminPages.addOrEditProduct',
     ];
 }

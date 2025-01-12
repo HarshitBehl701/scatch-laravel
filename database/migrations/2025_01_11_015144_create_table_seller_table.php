@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('contact')->nullable();
             $table->text('address')->nullable();
             $table->text('productId')->nullable();
+            $table->string('gstin')->nullable();
             $table->enum('is_active',[0,1])->default(0);
             $table->timestamps();
         });

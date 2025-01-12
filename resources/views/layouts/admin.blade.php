@@ -1,37 +1,38 @@
 @extends('layouts.main')
 
+@php
+    $currentUser =  session('userType');
+    $currentPage = Route::current()->parameter('page');
+    $menuNames = [
+        'user' =>  ['orders','cart','whislist'],
+        'seller'  =>  ['add-product','all-products','live-products','manage-orders'],
+    ]
+@endphp
+
 @section('content')
 <div class="flex w-[90%] gap-5 mx-auto  flex-wrap">
     <!-- Sidebar -->
     <div class="w-64 shadow-sm border rounded-md p-4 hidden md:flex  flex-col justify-between">
         <div class="topSection">
-        <h2 class="text-xl font-semibold mb-6">User Dashboard</h2>
-        <ul class="text-sm">
-            <a href="/user/profile" class="hover:text-white">
-            <li class="mb-4 border-b hover:bg-blue-600 hover:rounded-md border-gray-200  py-1  px-2">
+        <h2 class="text-xl font-semibold mb-6">{{ucfirst($currentUser)}} Dashboard</h2>
+        <ul class="text-sm font-semibold">
+            <a href="/{{$currentUser}}/profile" class="hover:text-white">
+            <li class="mb-4 border-b  {{$currentPage == 'profile'  ? 'bg-blue-600 text-white   rounded-md': ''}} hover:bg-blue-600 hover:rounded-md border-gray-200  py-1  px-2">
                 Profile
             </li>
             </a>
-            <a href="/user/edit-profile" class="hover:text-white">
-            <li class="mb-4 border-b hover:bg-blue-600 hover:rounded-md border-gray-200  py-1  px-2">
+            <a href="/{{$currentUser}}/edit-profile" class="hover:text-white">
+            <li class="mb-4 border-b {{$currentPage == 'edit-profile'  ? 'bg-blue-600 text-white   rounded-md': ''}} hover:bg-blue-600 hover:rounded-md border-gray-200  py-1  px-2">
                 Edit Profile
             </li>
             </a>
-            <a href="/user/orders" class="hover:text-white">
-            <li class="mb-4 border-b hover:bg-blue-600 hover:rounded-md border-gray-200  py-1  px-2">
-                Orders
+            @foreach ($menuNames[$currentUser] as $name)
+            <a href="/{{$currentUser}}/{{$name}}" class="hover:text-white">
+            <li class="mb-4 border-b  {{$currentPage == $name  ? 'bg-blue-600 text-white   rounded-md': ''}} hover:bg-blue-600 hover:rounded-md border-gray-200  py-1  px-2">
+                {{ucfirst($name)}}
             </li>
             </a>
-            <a href="/user/cart" class="hover:text-white">
-            <li class="mb-4 border-b hover:bg-blue-600 hover:rounded-md border-gray-200  py-1  px-2">
-                Cart
-            </li>
-            </a>
-            <a href="/user/whislist" class="hover:text-white">
-            <li class="mb-4 border-b hover:bg-blue-600 hover:rounded-md border-gray-200  py-1  px-2">
-                Whislist
-            </li>
-            </a>
+            @endforeach
         </ul>
         </div>
         <ul>

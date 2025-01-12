@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email');
             $table->string('password');
-            $table->integer('contact')->nullable();
+            $table->string('contact')->nullable();
             $table->text('address')->nullable();
             $table->text('cartId')->nullable();
             $table->text('whislitId')->nullable();

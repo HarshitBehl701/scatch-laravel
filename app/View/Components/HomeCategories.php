@@ -11,9 +11,11 @@ class HomeCategories extends Component
     /**
      * Create a new component instance.
      */
-    public function __construct()
+    public $categoriesData;
+
+    public function __construct($categoriesData)
     {
-        //
+        $this->categoriesData = $categoriesData;
     }
 
     /**

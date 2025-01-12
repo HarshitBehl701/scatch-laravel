@@ -39,11 +39,13 @@
                 FAQ
               </a>
             </li>
+            @if (!session()->has('userType'))
             <li class="">
               <a href="/seller-login" class="hover:text-blue-500 text-sm">
                 Join As Seller
               </a>
             </li>
+            @endif
           </ul>
           <ul class="cursor-pointer md:w-1/5 w-full">
             <li class="font-semibold">Get In Touch</li>
