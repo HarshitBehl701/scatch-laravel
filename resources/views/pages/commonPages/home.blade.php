@@ -2,6 +2,7 @@
 
 @php
     $categoriesData = $pageData['categories'];
+    $productData  = Arr::except($pageData,['categories']);
 @endphp
 
 @section('content')
@@ -14,6 +15,6 @@
 <x-home-categories :categoriesData="['categoriesData' => $categoriesData]"/>
 
 {{-- Products Section --}}
-<x-display-products />
+<x-display-products :productData="['productData' => $productData]" />
 
 @endsection

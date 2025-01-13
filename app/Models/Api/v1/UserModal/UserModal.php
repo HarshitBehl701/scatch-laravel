@@ -16,7 +16,7 @@ class UserModal extends Model
     'contact',
     'address',
     'cartId',
-    'whislitId',
+    'whislistId',
     'orderId',
     'is_active'
     ];

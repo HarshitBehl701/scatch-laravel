@@ -10,7 +10,7 @@ abstract class Controller
         'about' =>  'pages.commonPages.about',
         'faq' =>  'pages.commonPages.faq',
         'products' =>  'pages.commonPages.products',
-        'product-detail' =>  'pages.commonPages.mainProductDetail',
+        'product_detail' =>  'pages.commonPages.mainProductDetail',
         'login' =>  'pages.userPages.login',
         'seller-login' =>  'pages.sellerPages.login',
         'register' =>  'pages.userPages.register',

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('contact')->nullable();
             $table->text('address')->nullable();
             $table->text('cartId')->nullable();
-            $table->text('whislitId')->nullable();
+            $table->text('whislistId')->nullable();
             $table->text('orderId')->nullable();
             $table->enum('is_active',[0,1])->default(0);
             $table->timestamps();

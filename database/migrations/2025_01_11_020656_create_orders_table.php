@@ -20,7 +20,7 @@ return new class extends Migration
             $table->integer('amount');
             $table->integer('rating_by_user')->nullable();
             $table->integer('quantity')->default(1);
-            $table->enum('status',['ordered','processing','out-for-delivery','delivered'])->default('ordered');
+            $table->enum('status',['ordered','processing','out-for-delivery','delivered','cancel'])->default('ordered');
             $table->enum('is_active',[0,1])->default(1);
             $table->timestamps();
         });

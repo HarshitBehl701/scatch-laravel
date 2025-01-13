@@ -11,9 +11,12 @@ class DisplayProducts extends Component
     /**
      * Create a new component instance.
      */
-    public function __construct()
+
+     public $productData;
+
+    public function __construct($productData)
     {
-        //
+        $this->productData  = $productData;
     }
 
     /**

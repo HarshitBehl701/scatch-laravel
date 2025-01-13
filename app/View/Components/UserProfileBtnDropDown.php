@@ -11,9 +11,10 @@ class UserProfileBtnDropDown extends Component
     /**
      * Create a new component instance.
      */
-    public function __construct()
+    public  $componentId;
+    public function __construct($componentId)
     {
-        //
+        $this->componentId  =  $componentId;
     }
 
     /**

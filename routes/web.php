@@ -8,19 +8,12 @@ use App\Http\Controllers\Api\v1\ProductController\ProductController;
 use Illuminate\Support\Facades\Session;
 use  App\Http\Middleware\Api\v1\AuthMiddleware\AuthMiddleware;
 use  App\Http\Middleware\Api\v1\AuthMiddleware\LoginRegisterPageMiddleware;
-
-//Common Routes
-Route::get('/logout',function(){
-    Session::flush();
-    return redirect('/home')->with('success','User Logout  Successfully');
-});
-
-Route::get('/{loginRegisterPage}',[IndexController::class,'loginRegisterPageRouter'])->where('loginRegisterPage','login|register|seller-login|seller-register')->middleware(LoginRegisterPageMiddleware::class);
-Route::get('/{page?}',[IndexController::class,'pageRouter']);
-
 //User Routes
 
 //Get Routes
+Route::get('/user/manage_whislist/{action}/{productname}/{productId}',[UserController::class,'manageUserWhislist'])->middleware(AuthMiddleware::class.':user');
+Route::get('/user/manage_cart/{action}/{productname}/{productId}',[UserController::class,'manageUserCart'])->middleware(AuthMiddleware::class.':user');
+Route::get('/user/manage_order/{action}/{productname}/{productId}/{orderId?}',[UserController::class,'manageUserOrders'])->middleware(AuthMiddleware::class.':user');
 Route::get('/user/{page?}/{param1?}/{param2?}',[UserController::class,'pageRouter'])->middleware(AuthMiddleware::class.':user');
 //Get Routes
 
@@ -57,3 +50,14 @@ Route::get('/product/status-update/{productId}',[ProductController::class,'updat
 Route::post('/product/create',[ProductController::class,'createProduct'])->name('product.create')->middleware(AuthMiddleware::class.':seller');
 Route::post('/product/update-product/{productId}',[ProductController::class,'updateProduct'])->name('product.update')->middleware(AuthMiddleware::class.':seller');
 //Post  Routes
+
+
+
+//Common Routes
+Route::get('/logout',function(){
+    Session::flush();
+    return redirect('/home')->with('success','User Logout  Successfully');
+});
+
+Route::get('/{loginRegisterPage}',[IndexController::class,'loginRegisterPageRouter'])->where('loginRegisterPage','login|register|seller-login|seller-register')->middleware(LoginRegisterPageMiddleware::class);
+Route::get('/{page?}/{param1?}/{param2?}',[IndexController::class,'pageRouter']);
