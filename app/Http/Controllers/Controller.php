@@ -25,6 +25,8 @@ abstract class Controller
       'cart' =>  'pages.adminPages.commonPages.productList',
       'whislist' =>  'pages.adminPages.commonPages.productList',
       'product-details' =>  'pages.adminPages.commonPages.productDetails',
+      'order-details' =>  'pages.adminPages.userAdminPages.orderDetails',
+      'order_detail' =>  'pages.adminPages.sellerAdminPages.orderDetails',
       'all-products' =>  'pages.adminPages.commonPages.productList',
       'live-products' =>  'pages.adminPages.commonPages.productList',
       'manage-orders' =>  'pages.adminPages.commonPages.productList',

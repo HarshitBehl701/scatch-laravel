@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('customerId');
             $table->string('productId');
             $table->string('sellerId');
+            $table->string('orderId');
             $table->string('comment');
             $table->enum('is_active',[0,1])->default(0);
             $table->timestamps();

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use  App\Models\Api\v1\UserModal\UserModal;
 use  App\Models\Api\v1\ProductModal\ProductModal;
 use  App\Models\Api\v1\OrderModal\OrderModal;
+use  App\Models\Api\v1\CommentModal\CommentModal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
@@ -147,7 +148,7 @@ class UserController extends Controller
     }
 
     public function manageUserWhislist($action,$productname,$productId){
-        $product  = ProductModal::where('id',$productId)->where('name','like','%'.$productname.'%')->where('is_active','1')->first();
+        $product  = ProductModal::where('id',$productId)->where('name','like','%'.urldecode($productname).'%')->where('is_active','1')->first();
 
         if(!$product)  return back()->with('error','Invalid Product');
         else{
@@ -215,32 +216,44 @@ class UserController extends Controller
     }
 
     public function manageUserOrders($action,$productname,$productId,$orderId  = null){
-        $product  = ProductModal::where('id',$productId)->where('name','like','%'.$productname.'%')->where('is_active','1')->first();
+        $product  = ProductModal::where('id',$productId)->where('name','like','%'.urldecode($productname).'%')->where('is_active','1')->first();
 
         if(!$product)  return back()->with('error','Invalid Product');
         else{
             $user  = UserModal::where('email',Session::get("email"))->first();
             if(!$user)  return back()->with('error','Some  Error  Occured');
             else{
-
+                $previousOrders =   ($user->orderId)  ? explode(',',$user->orderId)  :  [];
                 if($action == 'add'){
-                    $previousOrders =   ($user->orderId)  ? explode(',',$user->orderId)  :  [];
-                    try{
-                        $order  = OrderModal::create([
-                            'productId' => $product->id,
-                            'customerId' => $user->id,
-                            'sellerId' => $product->sellerId,
-                            'amount' => $product->price -  ($product->price * ($product['discount']/100)),
-                        ]);
-                    }catch(\Exception $e){
-                        return  back()->with('error',$e->getMessage);
+
+                    $userPreviousCartItems = explode(",",$user->cartId);
+
+                    if(!in_array($productId,$userPreviousCartItems)){
+                        return back()->with('error','Item Is  Not  in your cart,  please add  the product  to  cart first');
+                    }else{                        
+                        try{
+                            $order  = OrderModal::create([
+                                'productId' => $product->id,
+                                'customerId' => $user->id,
+                                'sellerId' => $product->sellerId,
+                                'amount' => $product->price -  ($product->price * ($product['discount']/100)),
+                            ]);
+                        }catch(\Exception $e){
+                            return  back()->with('error',$e->getMessage);
+                        }
+
+                        array_push($previousOrders,$order->id);
+
+                        $user->orderId =  implode(',',$previousOrders);
+                        unset($userPreviousCartItems[array_search($productId,$userPreviousCartItems)]);
+                        
+                        $user->cartId  =  implode(',',$userPreviousCartItems);
+
+                        $user->save();
+                        return  redirect('/user/orders')->with('success','Successfully Place  The  Order');
+                        
                     }
 
-                    array_push($previousOrders,$order->id);
-
-                    $user->orderId =  implode(',',$previousOrders);
-                    $user->save();
-                    return  back()->with('success','Successfully Place  The  Order');
                 }elseif($action   == 'cancel'){
                     if(!in_array($orderId,$previousOrders)) return  back()->with('error','Product is  not in  your order  list');
                     $order = OrderModal::where('id',$orderId)->where("is_active",'1')->first();
@@ -250,7 +263,12 @@ class UserController extends Controller
                         else{    
                             $order->status   =  'cancel';
                             $order->save();
-                            return  back()->with('success','Successfully Cancelled The  Order');
+
+                            unset($previousOrders[array_search($orderId,$previousOrders)]);
+                            $user->orderId = implode(',',$previousOrders);
+                            $user->save();
+                            
+                            return  redirect('/user/profile')->with('success','Successfully Cancelled The  Order');
                         }
 
                     }
@@ -259,6 +277,90 @@ class UserController extends Controller
             }
         }
         return back()->with('error','Some  Error  Occured');
+    }
+
+    public  function  addComment(Request  $request,$orderId){
+        $validation =  $request->validate([
+            'comment'   => 'required|string'
+        ]);
+
+        $user = UserModal::where('email',session('email'))->where('is_active','1')->first();
+
+        if(!$user)  return back()->with('error','Some  Unexpected   Error  Occured');
+
+        $order  = OrderModal::where('id',$orderId)->where('is_active','1')->first();
+
+        if(!$order)   return  back()->with('error','Some  Unexpected  Error Occured');
+
+        $product = ProductModal::where('id',$order->productId)->where('is_active','1')->first();
+
+        if(!$product)   return  back()->with('error','Some  Unexpected  Error Occured');
+
+        DB::beginTransaction();
+        try{
+
+            $comment = CommentModal::create([
+                'customerId'   => $user->id,
+                'productId'   => $order->productId,
+                'sellerId'   => $order->sellerId,
+                'orderId'   => $order->id,    
+                'comment'   => $request->comment,    
+                'is_active'   => '1',    
+            ]);
+
+            DB::commit();
+            
+            $previousCommentsOfThisOrder  = ($order->commentId) ? explode(',',$order->commentId) :  [];
+            array_push($previousCommentsOfThisOrder,$comment->id);
+            $order->commentId =  implode(',',$previousCommentsOfThisOrder);
+            $order->save();
+
+            $previousCommentOfProduct  =  ($product->commentId)   ? explode(',',$product->commentId) : [];
+            array_push($previousCommentOfProduct,$comment->id);
+            $product->commentId =  implode(',',$previousCommentOfProduct);
+            $product->save();
+
+            return  back()->with('success','Successfully Added  Your  Comment');
+        }catch(\Exception $e){
+            DB::rollback();
+            return back()->with('error',$e->getMessage());
+        }
+
+    }
+
+    public  function updateProductRating($rating,$orderId){
+
+        $user  =  UserModal::where('email',session('email'))->where('is_active','1')->first();
+
+        if(!$user) return back()->with('error','Some  Unexpected Error  Occured');
+
+        $order =  OrderModal::where('id',$orderId)->where('is_active','1')->where('status','delivered')->first();
+
+        if(!$order)  return  back()->with('error',"Some Unexpected  Error Occured or Rating Can't Be Give For Current Status");
+        
+        $product = ProductModal::where('id',$order->productId)->where('is_active','1')->first();
+        
+        if($order->rating_by_user){
+            $previous_product_rating_sum  =  $product->sum_of_all_rating;
+            $product->sum_of_all_rating = $product->sum_of_all_rating - $order->rating_by_user +  $rating;
+            $product->rating =  $product->sum_of_all_rating  / $product->number_of_customer_rate ;
+            $product->save();
+        }else{
+            $number_of_customer  =  $product->number_of_customer_rate +  1;
+            $previous_product_rating_sum  =  $product->sum_of_all_rating;
+            $product->sum_of_all_rating = $product->sum_of_all_rating +  $rating;
+            $product->rating =  $product->sum_of_all_rating  / $number_of_customer;
+            $product->number_of_customer_rate = $number_of_customer;
+            $product->save();
+        }
+        
+        $order->rating_by_user = $rating;
+        $order->save();
+        
+
+        return  back()->with('success','Thank you  for giving  your  valuable  rating  to this product');
+
+
     }
 
 }

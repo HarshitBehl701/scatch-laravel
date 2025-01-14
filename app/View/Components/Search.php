@@ -6,15 +6,17 @@ use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
-class Comment extends Component
+class Search extends Component
 {
     /**
      * Create a new component instance.
      */
-    public  $commentData;
-    public function __construct($commentData)
+    public  $mdScreen;
+    public  $elemIndex;
+    public function __construct($mdScreen,$elemIndex)
     {
-        $this->commentData  = $commentData;
+        $this->mdScreen =  $mdScreen;
+        $this->elemIndex =  $elemIndex;
     }
 
     /**
@@ -22,6 +24,6 @@ class Comment extends Component
      */
     public function render(): View|Closure|string
     {
-        return view('components.comment');
+        return view('components.search');
     }
 }

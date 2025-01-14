@@ -4,6 +4,30 @@
     $productDetail = $pageData['main_page_product_details'];
     $topProducts = $pageData['top_products'];
     $newlyAddedProducts = $pageData['newly_products'];
+    
+    $cartBtnLink =  '/login';
+    $whislistBtnLink =  '/login';
+    $buttonText =  'Login  First To Add To Cart';
+    $in_cart =   false;
+    $in_whislist =   false;
+
+    if(session()->has('userType')  && session()->has('email')){
+        $cartBtnLink = '/user/manage_cart/add/'.urlencode($productDetail['name']).'/'.$productDetail['id'];
+        $whislistBtnLink = '/user/manage_whislist/add/'.urlencode($productDetail['name']).'/'.$productDetail['id'];
+        $in_cart = $productDetail['in_cart'];
+        $in_whislist = $productDetail['in_whislist'];
+
+        if($in_cart){
+            $buttonText =   'Remove  From Cart';
+            $cartBtnLink = '/user/manage_cart/remove/'.urlencode($productDetail['name']).'/'.$productDetail['id'];
+        }
+        
+        if($in_whislist){
+            $whislistBtnLink = '/user/manage_whislist/remove/'.urlencode($productDetail['name']).'/'.$productDetail['id'];
+        }
+
+    }
+
 @endphp
 
 @section('content')
@@ -53,19 +77,28 @@
 
     </div>
     <div class="rightSection w-full md:w-[60%]">
-        <h1 class="text-3xl">{{$productDetail['name']}}</h1>
-        <ul  class="mt-2">
-            <li  class="flex mb-1 justify-between  items-center flex-wrap  md:w-[90%]"><span>Brand Name</span><span  class="w-1/2   text-right">{{$productDetail['brandDetails']['brandName']}}</span></li>
-            <li  class="flex mb-1 justify-between  items-center flex-wrap md:w-[90%]"><span>Description</span><span  class="text-justify w-1/2 ">{{$productDetail['description']}}</span></li>
-            <li  class="flex mb-1 justify-between  items-center flex-wrap  md:w-[90%]"><span>Rating</span><span  class="w-1/2   text-right">
+        <div class="header flex items-center justify-between gap-3">
+            <h1 class="text-3xl">{{$productDetail['name']}}</h1>
+        @if (session()->has('userType')  && session()->has('email'))
+        <a   href="{{$whislistBtnLink}}" class="inline-block   bg-white p-2 rounded-full shadow-smbg-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="{{$in_whislist ? 'red' :  'black'}}">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>              
+            </a>
+        @endif
+        </div>
+        <ul  class="mt-2 ">
+            <li  class="flex mb-1 justify-between items-center flex-wrap "><span>Brand Name</span><span  class="w-1/2   text-right">{{$productDetail['brandDetails']['brandName']}}</span></li>
+            <li  class="flex mb-1 justify-between  items-center flex-wrap "><span>Description</span><span  class="text-justify w-1/2 ">{{$productDetail['description']}}</span></li>
+            <li  class="flex mb-1 justify-between  items-center flex-wrap "><span>Rating</span><span  class="text-right">
                     @for ($i = 0; $i < 5; $i++)
                     <span class="{{$i < $productDetail['rating']  ? 'text-yellow-400' : ''}}">&#9733;</span>
                     @endfor
                     <small class="text-gray-500">({{$productDetail['number_of_customer_rate']}})</small>
                 </span></li>
-            <li  class="flex mb-1 justify-between text-xl items-center flex-wrap  md:w-[90%]"><span>Price</span><span  class="w-1/2   text-right">{{$productDetail['price'] - ($productDetail['discount']/100)*$productDetail['price'] - $productDetail['platformFee']}}  <small  class="line-through">({{$productDetail['price']}})</small></span></li>
-            <li   class="flex mb-1 justify-end  mt-3 md:w-[90%]">
-                <a href="{{(session()->has('userType') && session('userType')   == 'user')    ? ''  :   '/login'}}" class="bg-blue-600 hover:bg-blue-700 cursor-pointer inline-block  px-2  py-1  rounded-md  shadow-sm text-white font-semibold">Add  To Cart</a>
+            <li  class="flex mb-1 justify-between text-xl items-center flex-wrap "><span>Price</span><span  class="w-1/2   text-right">{{$productDetail['price'] - ($productDetail['discount']/100)*$productDetail['price'] - $productDetail['platformFee']}}  <small  class="line-through">({{$productDetail['price']}})</small></span></li>
+            <li   class="flex mb-1 justify-end  mt-3">
+                <a href="{{$cartBtnLink}}" class="{{$in_cart ? "bg-red-600 hover:bg-red-700"  : "bg-blue-600 hover:bg-blue-700"}} cursor-pointer inline-block  px-2  py-1  rounded-md  shadow-sm text-white font-semibold">{{$buttonText}}</a>
             </li>
         </ul>
     </div>
@@ -77,8 +110,8 @@
 
     <div class="commentContainer max-h-[250px]  overflow-y-auto">
         @if (count($productDetail['comments'])  >  0)
-            @foreach($productDetail['comments'] as  $comment)
-            <x-comment :commentData="$comment" />
+            @foreach($productDetail['comments'] as  $commentData)
+            <x-comment :commentData="$commentData" />
             @endforeach
         @else
             <p class="italic font-light text-sm">No    Comments  Yet...</p>

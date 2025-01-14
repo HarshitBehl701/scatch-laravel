@@ -11,6 +11,7 @@ use  App\Http\Middleware\Api\v1\AuthMiddleware\LoginRegisterPageMiddleware;
 //User Routes
 
 //Get Routes
+Route::get('/user/update_rating/{rating}/{orderId?}',[UserController::class,'updateProductRating'])->middleware(AuthMiddleware::class.':user');
 Route::get('/user/manage_whislist/{action}/{productname}/{productId}',[UserController::class,'manageUserWhislist'])->middleware(AuthMiddleware::class.':user');
 Route::get('/user/manage_cart/{action}/{productname}/{productId}',[UserController::class,'manageUserCart'])->middleware(AuthMiddleware::class.':user');
 Route::get('/user/manage_order/{action}/{productname}/{productId}/{orderId?}',[UserController::class,'manageUserOrders'])->middleware(AuthMiddleware::class.':user');
@@ -22,13 +23,15 @@ Route::post('/user/register',[UserController::class,'register'])->name('user.reg
 Route::post('/user/login',[UserController::class,'login'])->name('user.login');
 Route::post('/user/update-profile',[UserController::class,'updateProfile'])->name('user.updateProfile');
 Route::post('/user/update-image',[UserController::class,'uploadProfileImage'])->name('user.uploadProfileImage');
+Route::post('/user/add_comment/{orderId}',[UserController::class,'addComment'])->name('user.addComment');
 //Post Routes
 
 
 //Seller  Routes
 
 //Get Routes
-Route::get('/seller/{page?}/{param1?}/{param2?}',[SellerController::class,'pageRouter'])->middleware(AuthMiddleware::class.':seller');
+Route::get('/seller/update_order_status/{newStatus}/{orderId}',[SellerController::class,'updateOrderStatus'])->middleware(AuthMiddleware::class.':seller');
+Route::get('/seller/{page?}/{param1?}/{param2?}/{param3?}',[SellerController::class,'pageRouter'])->middleware(AuthMiddleware::class.':seller');
 //Get Routes
 
 //Post Routes
@@ -60,4 +63,5 @@ Route::get('/logout',function(){
 });
 
 Route::get('/{loginRegisterPage}',[IndexController::class,'loginRegisterPageRouter'])->where('loginRegisterPage','login|register|seller-login|seller-register')->middleware(LoginRegisterPageMiddleware::class);
+Route::get('/api/v1/get_search_data',[IndexController::class,'getSearchData']);
 Route::get('/{page?}/{param1?}/{param2?}',[IndexController::class,'pageRouter']);

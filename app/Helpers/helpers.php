@@ -16,7 +16,6 @@ if(!function_exists('get_page_data')){
             'products' => ['categories','all_products'],
             'add-product' => ['categories'],
             'edit-product' => ['categories','product_details'],
-            'edit-product' => ['categories','product_details'],
             'profile' => ['userDetail'],
             'orders' => ['user_orders'],
             'cart' => ['user_cart'],
@@ -25,6 +24,8 @@ if(!function_exists('get_page_data')){
             'all-products' => ['seller_product_list'],
             'live-products' => ['seller_live_product_list'],
             'product-details' => ['product_details'],
+            'order-details' => ['order_details'],
+            'manage-orders' => ['seller_product_orders'],
             'product_detail' => ['main_page_product_details','top_products','newly_products'],
         ];
       
@@ -39,9 +40,11 @@ if(!function_exists('get_page_data')){
             'user_cart' => 'get_user_all_cart_products',
             'user_whislist' => 'get_user_all_whislist_products',
             'product_details' => 'get_product_details',
+            'order_details' => 'get_user_order_details',
             'main_page_product_details' => 'get_main_page_product_detail',
-            'seller_product_list' => 'seller_all_products_list',
+            'seller_product_list' => 'get_seller_all_products',
             'seller_live_product_list' => 'seller_all_live_products_list',
+            'seller_product_orders' => 'get_seller_products_all_orders',
         ];
 
 
@@ -66,54 +69,40 @@ if(!function_exists('get_all_products')){
         if($products->count()  > 0){
             $requiredData  =  [];
             
-            foreach($products as $value){
+            if(session()->has('userType')   &&  session()->has('email')  && session('userType') == 'user'){
+                $user  =  UserModal::where('email',session('email'))->where("is_active",'1')->first();
 
-                $seller = SellerModal::find($value->sellerId);
-
-                $brandDetails =  [
-                    'brandName' => $seller->brandName,
-                    'brandLogo' => $seller->brandLogo,
-                ];
-
-                $category =  CategoryModal::find($value->categoryId)->name ?? $value->categoryId;
-                $subcategory =  SubCategoryModal::find($value->subCategoryId)->name ?? $value->subCategoryId;
-
-                $commentsRawData = CommentModal::whereIn('id',explode(',',$value->commentId))->get();
-                $comments  = [];
-
-                if($commentsRawData->count()   > 0){
-                    foreach($commentRawData as $rawData){
-
-                        if($rawData->customerId){
-                            $customer =  UserModal::find($rawData->customerId);
-                        }
-
-                        $comments[] = [
-                            'user' => $customer->name,
-                            'comment' => $rawData->comment,
-                            'commentDate' => $rawData->created_at,
-                        ];
-                    }
+                if($user){
+                    $cartList  = ($user->cartId) ? explode(',',$user->cartId)   : [];
+                    $whislist  = ($user->whislistId) ?  explode(",",$user->whislistId) : [];
                 }
 
+            }
 
+            foreach($products as $value){
+
+                $in_cart  = false;
+                $in_whislist  = false;
+
+                if(isset($cartList)){
+                    $in_cart =  in_array($value->id,$cartList) ? true: false;
+                }
                 
+                if(isset($whislist)){
+                    $in_whislist =  in_array($value->id,$whislist) ? true: false;
+                }
 
                 $requiredData[]  =  [
                     'id'  =>  $value->id,
                     'name'  =>  $value->name,
                     'description'  =>  $value->description,
-                    'category'  =>  $category,
-                    'subcategory'  =>  $subcategory,
-                    'brandDetails'  =>  $brandDetails,
                     'images'  =>  explode(',',$value->images),
                     'price'  =>  $value->price,
                     'discount'  =>  $value->discount,
-                    'platformFee'  =>  $value->platformFee,
-                    'views'  =>  $value->views,
                     'number_of_customer_rate'  =>  $value->number_of_customer_rate,
                     'rating'  =>  $value->rating,
-                    'comments'  =>  $comments,
+                    'in_cart'  =>  $in_cart,
+                    'in_whislist'  =>  $in_whislist,
                 ];
             }
             return $requiredData;
@@ -133,6 +122,17 @@ if(!function_exists('get_main_page_product_detail')){
 
             if(!$product) return  [];
             else{
+
+                if(session()->has('userType')   &&  session()->has('email') && session("userType") == 'user'){
+                    $user  =  UserModal::where('email',session('email'))->where("is_active",'1')->first();
+    
+                    if($user){
+                        $cartList  = ($user->cartId) ? explode(',',$user->cartId)   : [];
+                        $whislist  = ($user->whislistId) ?  explode(",",$user->whislistId) : [];
+                    }
+    
+                }
+
                 $seller = SellerModal::find($product->sellerId);
 
                 $brandDetails =  [
@@ -140,45 +140,52 @@ if(!function_exists('get_main_page_product_detail')){
                     'brandLogo' => $seller->brandLogo,
                 ];
 
-                $category =  CategoryModal::find($product->categoryId)->name ?? $product->categoryId;
-                $subcategory =  SubCategoryModal::find($product->subCategoryId)->name ?? $product->subCategoryId;
-
                 $commentsRawData = CommentModal::whereIn('id',explode(',',$product->commentId))->get();
                 $comments  = [];
 
                 if($commentsRawData->count()   > 0){
-                    foreach($commentRawData as $rawData){
+                    foreach($commentsRawData as $rawData){
 
                         if($rawData->customerId){
                             $customer =  UserModal::find($rawData->customerId);
                         }
 
                         $comments[] = [
-                            'user' => $customer->name,
+                            'picture' => $customer->picture,
+                            'name' => $customer->name,
                             'comment' => $rawData->comment,
-                            'commentDate' => $rawData->created_at,
+                            'dateOfComment' => $rawData->created_at,
                         ];
                     }
                 }
 
 
+                $in_cart  = false;
+                $in_whislist  = false;
+
+                if(isset($cartList)){
+                    $in_cart =  in_array($product->id,$cartList) ? true: false;
+                }
                 
+                if(isset($whislist)){
+                    $in_whislist =  in_array($product->id,$whislist) ? true: false;
+                }
+
 
                 $requiredData  =  [
                     'id'  =>  $product->id,
                     'name'  =>  $product->name,
                     'description'  =>  $product->description,
-                    'category'  =>  $category,
-                    'subcategory'  =>  $subcategory,
                     'brandDetails'  =>  $brandDetails,
                     'images'  =>  explode(',',$product->images),
                     'price'  =>  $product->price,
                     'discount'  =>  $product->discount,
                     'platformFee'  =>  $product->platformFee,
-                    'views'  =>  $product->views,
                     'number_of_customer_rate'  =>  $product->number_of_customer_rate,
                     'rating'  =>  $product->rating,
                     'comments'  =>  $comments,
+                    'in_cart'  =>  $in_cart,
+                    'in_whislist'  =>  $in_whislist,
                 ];
                 return $requiredData;
             }
@@ -196,55 +203,44 @@ if(!function_exists('get_top_products'))
         $rawProductsData = ProductModal::where('is_active','1')->orderBy('views','DESC')->limit($limit)->get();
 
         if($rawProductsData->count() >   0){
+
+            if(session()->has('userType')   &&  session()->has('email') && session("userType") == 'user'){
+                $user  =  UserModal::where('email',session('email'))->where("is_active",'1')->first();
+
+                if($user){
+                    $cartList  = ($user->cartId) ? explode(',',$user->cartId)   : [];
+                    $whislist  = ($user->whislistId) ?  explode(",",$user->whislistId) : [];
+                }
+
+            }
+
             $requiredData = [];
             
             foreach($rawProductsData as  $value){
-                $seller = SellerModal::find($value->sellerId);
+                $in_cart  = false;
+                $in_whislist  = false;
 
-                $brandDetails =  [
-                    'brandName' => $seller->brandName,
-                    'brandLogo' => $seller->brandLogo,
-                ];
-
-                $category =  CategoryModal::find($value->categoryId)->name ?? $value->categoryId;
-                $subcategory =  SubCategoryModal::find($value->subCategoryId)->name ?? $value->subCategoryId;
-
-                $commentsRawData = CommentModal::whereIn('id',explode(',',$value->commentId))->get();
-                $comments  = [];
-
-                if($commentsRawData->count()   > 0){
-                    foreach($commentRawData as $rawData){
-
-                        if($rawData->customerId){
-                            $customer =  UserModal::find($rawData->customerId);
-                        }
-
-                        $comments[] = [
-                            'user' => $customer->name,
-                            'comment' => $rawData->comment,
-                            'commentDate' => $rawData->created_at,
-                        ];
-                    }
+                if(isset($cartList)){
+                    $in_cart =  in_array($value->id,$cartList) ? true: false;
                 }
-
-
+                
+                if(isset($whislist)){
+                    
+                    $in_whislist =  in_array($value->id,$whislist) ? true: false;
+                }
                 
 
                 $requiredData[]  =  [
                     'id'  =>  $value->id,
                     'name'  =>  $value->name,
                     'description'  =>  $value->description,
-                    'category'  =>  $category,
-                    'subcategory'  =>  $subcategory,
-                    'brandDetails'  =>  $brandDetails,
                     'images'  =>  explode(',',$value->images),
                     'price'  =>  $value->price,
                     'discount'  =>  $value->discount,
-                    'platformFee'  =>  $value->platformFee,
-                    'views'  =>  $value->views,
                     'number_of_customer_rate'  =>  $value->number_of_customer_rate,
                     'rating'  =>  $value->rating,
-                    'comments'  =>  $comments,
+                    'in_cart'  =>  $in_cart,
+                    'in_whislist'  =>  $in_whislist,
                 ];
             }
 
@@ -268,53 +264,40 @@ if(!function_exists('get_latest_fashions')){
         $rawProductsData = ProductModal::where('is_active','1')->where('categoryId',$category->id)->orderBy('views','DESC')->limit($limit)->get();
 
         if($rawProductsData->count() >   0){
+            if(session()->has('userType')   &&  session()->has('email') && session("userType") == 'user'){
+                $user  =  UserModal::where('email',session('email'))->where("is_active",'1')->first();
+
+                if($user){
+                    $cartList  = ($user->cartId) ? explode(',',$user->cartId)   : [];
+                    $whislist  = ($user->whislistId) ?  explode(",",$user->whislistId) : [];
+                }
+
+            }
             $requiredData = [];
             
             foreach($rawProductsData as  $value){
-                $seller = SellerModal::find($value->sellerId);
+                $in_cart  = false;
+                $in_whislist  = false;
 
-                $brandDetails =  [
-                    'brandName' => $seller->brandName,
-                    'brandLogo' => $seller->brandLogo,
-                ];
-                $subcategory =  SubCategoryModal::find($value->subCategoryId)->name ?? $value->subCategoryId;
-
-                $commentsRawData = CommentModal::whereIn('id',explode(',',$value->commentId))->get();
-                $comments  = [];
-
-                if($commentsRawData->count()   > 0){
-                    foreach($commentRawData as $rawData){
-
-                        if($rawData->customerId){
-                            $customer =  UserModal::find($rawData->customerId);
-                        }
-
-                        $comments[] = [
-                            'user' => $customer->name,
-                            'comment' => $rawData->comment,
-                            'commentDate' => $rawData->created_at,
-                        ];
-                    }
+                if(isset($cartList)){
+                    $in_cart =  in_array($value->id,$cartList) ? true: false;
                 }
-
-
                 
+                if(isset($whislist)){
+                    $in_whislist =  in_array($value->id,$whislist) ? true: false;
+                }
 
                 $requiredData[]  =  [
                     'id'  =>  $value->id,
                     'name'  =>  $value->name,
                     'description'  =>  $value->description,
-                    'category'  =>  $category->name  ?? $category->id,
-                    'subcategory'  =>  $subcategory,
-                    'brandDetails'  =>  $brandDetails,
                     'images'  =>  explode(',',$value->images),
                     'price'  =>  $value->price,
                     'discount'  =>  $value->discount,
-                    'platformFee'  =>  $value->platformFee,
-                    'views'  =>  $value->views,
                     'number_of_customer_rate'  =>  $value->number_of_customer_rate,
                     'rating'  =>  $value->rating,
-                    'comments'  =>  $comments,
+                    'in_cart'  =>  $in_cart,
+                    'in_whislist'  =>  $in_whislist,
                 ];
             }
 
@@ -331,55 +314,43 @@ if(!function_exists("get_newly_products")){
         $productsRawData  = ($limit && is_integer($limit)) ? ProductModal::where('is_active','1')->orderBy('id','DESC')->limit($limit)->get() :  ProductModal::where('is_active','1')->orderBy('id','DESC')->get();
 
         if($productsRawData->count() > 0){
+
+            if(session()->has('userType')   &&  session()->has('email') && session("userType") == 'user'){
+                $user  =  UserModal::where('email',session('email'))->where("is_active",'1')->first();
+
+                if($user){
+                    $cartList  = ($user->cartId) ? explode(',',$user->cartId)   : [];
+                    $whislist  = ($user->whislistId) ?  explode(",",$user->whislistId) : [];
+                }
+
+            }
+
             $requiredData  = [];
 
             foreach($productsRawData as  $value){
-                $seller = SellerModal::find($value->sellerId);
+                $in_cart  = false;
+                $in_whislist  = false;
 
-                $brandDetails =  [
-                    'brandName' => $seller->brandName,
-                    'brandLogo' => $seller->brandLogo,
-                ];
-
-                $category =  CategoryModal::find($value->categoryId)->name ?? $value->categoryId;
-                $subcategory =  SubCategoryModal::find($value->subCategoryId)->name ?? $value->subCategoryId;
-
-                $commentsRawData = CommentModal::whereIn('id',explode(',',$value->commentId))->get();
-                $comments  = [];
-
-                if($commentsRawData->count()   > 0){
-                    foreach($commentRawData as $rawData){
-
-                        if($rawData->customerId){
-                            $customer =  UserModal::find($rawData->customerId);
-                        }
-
-                        $comments[] = [
-                            'user' => $customer->name,
-                            'comment' => $rawData->comment,
-                            'commentDate' => $rawData->created_at,
-                        ];
-                    }
+                if(isset($cartList)){
+                    $in_cart =  in_array($value->id,$cartList) ? true: false;
                 }
-
-
+                
+                if(isset($whislist)){
+                    $in_whislist =  in_array($value->id,$whislist) ? true: false;
+                }
                 
 
                 $requiredData[]  =  [
                     'id'  =>  $value->id,
                     'name'  =>  $value->name,
                     'description'  =>  $value->description,
-                    'category'  =>  $category,
-                    'subcategory'  =>  $subcategory,
-                    'brandDetails'  =>  $brandDetails,
                     'images'  =>  explode(',',$value->images),
                     'price'  =>  $value->price,
                     'discount'  =>  $value->discount,
-                    'platformFee'  =>  $value->platformFee,
-                    'views'  =>  $value->views,
                     'number_of_customer_rate'  =>  $value->number_of_customer_rate,
                     'rating'  =>  $value->rating,
-                    'comments'  =>  $comments,
+                    'in_cart'  =>  $in_cart,
+                    'in_whislist'  =>  $in_whislist,
                 ];
             }
 
@@ -406,9 +377,6 @@ if(!function_exists('get_user_details')){
                 'email' => $user->email,
                 'contact' => $user->contact,
                 'address' => $user->address,
-                'cartId' => $user->cartId,
-                'whislistId' => $user->whislistId,
-                'orderId' => $user->orderId,
             ];
 
             return  $responseData;
@@ -423,7 +391,6 @@ if(!function_exists('get_user_details')){
                 'email' => $user->email,
                 'contact' => $user->contact,
                 'address' => $user->address,
-                'productId' => $user->productId,
                 'gstin' => $user->gstin,
             ];
             return $responseData;
@@ -436,7 +403,6 @@ if(!function_exists('get_user_details')){
 
 if(!function_exists('get_product_details')){
     function  get_product_details($productName,$productId){
-
         if($productName  || $productId){
             if($productName &&  $productId){
                 $product = ProductModal::where('id',$productId)->where('name',$productName)->first();
@@ -456,19 +422,17 @@ if(!function_exists('get_product_details')){
             $currentUser  = session('userType');
 
             if($currentUser  == 'seller'){
-
-                $category =  CategoryModal::find($product->categoryId)  ?? $product->categoryId;
-                $subCategory  = SubCategoryModal::find($product->subCategoryId) ?? $product->subCategoryId;
                 $commentsRawData  =  CommentModal::whereIn('id',explode(',',$product->commentId))->get();
                 $comments  = [];
 
                 if($commentsRawData->count() > 0){
-                    foreach($commentRawData  as $comment){
+                    foreach($commentsRawData  as $comment){
                         $customer =  UserModal::find($comment->customerId);
                         $comments[] = [
-                            'user' => $customer->name  ?? $comment->customerId,
+                            'name' => $customer->name,
+                            'picture' => $customer->picture,
                             'comment' => $comment->comment,
-                            'commentDate' => $comment->created_at,
+                            'dateOfComment' => $comment->created_at,
                         ];
                     }
                 }
@@ -477,8 +441,6 @@ if(!function_exists('get_product_details')){
                     'id' => $product->id,
                     'name' => $product->name,
                     'description' => $product->description,
-                    'category' => $category->name  ?? $product->categoryId,
-                    'subcategory' => $subCategory->name ?? $product->subCategoryId,   
                     'images' => explode(',',$product->images),
                     'price' => $product->price,
                     'discount' => $product->discount,
@@ -486,7 +448,7 @@ if(!function_exists('get_product_details')){
                     'views' => $product->views,
                     'number_of_customer_rate' => $product->number_of_customer_rate,
                     'rating' => $product->rating,
-                    'comments' => $comments ??  $product->commentId,
+                    'comments' => $comments,
                     'status' => $product->is_active,
                 ];
 
@@ -494,6 +456,59 @@ if(!function_exists('get_product_details')){
                 return $requiredData;
 
             }else if($currentUser  == 'user'){
+
+                if(session()->has('userType')   &&  session()->has('email')){
+                    $user  =  UserModal::where('email',session('email'))->where("is_active",'1')->first();
+    
+                    if($user){
+                        $cartList  = ($user->cartId) ? explode(',',$user->cartId)   : [];
+                        $whislist  = ($user->whislistId) ?  explode(",",$user->whislistId) : [];
+                    }
+    
+                }
+                $commentsRawData  =  CommentModal::whereIn('id',explode(',',$product->commentId))->get();
+                $comments  = [];
+
+                if($commentsRawData->count() > 0){
+                    foreach($commentsRawData  as $comment){
+                        $customer =  UserModal::find($comment->customerId);
+                        $comments[] = [
+                            'picture' => $customer->picture,
+                            'name' => $customer->name,
+                            'comment' => $comment->comment,
+                            'dateOfComment' => $comment->created_at,
+                        ];
+                    }
+                }
+
+                $in_cart  = false;
+                $in_whislist  = false;
+
+                if(isset($cartList)){
+                    $in_cart =  in_array($product->id,$cartList) ? true: false;
+                }
+                
+                if(isset($whislist)){
+                    $in_whislist =  in_array($product->id,$whislist) ? true: false;
+                }
+                
+
+                $requiredData =  [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'description' => $product->description,
+                    'images' => explode(',',$product->images),
+                    'price' => $product->price,
+                    'discount' => $product->discount,
+                    'platformFee' => $product->platformFee,
+                    'number_of_customer_rate' => $product->number_of_customer_rate,
+                    'rating' => $product->rating,
+                    'comments' => $comments,
+                    'in_cart' => $in_cart,
+                    'in_whislist' => $in_whislist,
+                ];
+
+                return $requiredData;
 
             }else return  [];
             
@@ -503,50 +518,38 @@ if(!function_exists('get_product_details')){
     }
 }
 
-if(!function_exists('seller_all_products_list')){
-    function seller_all_products_list(){
-        $productsRawData = get_seller_all_products();
-        if(count($productsRawData)  >   0){
-            $requiredData  = [];
-
-            foreach($productsRawData  as $data){
-                $requiredData[] = [
-                    'id'  =>  $data['id'],
-                    'name'  =>  $data['name'],
-                    'description'  =>  $data['description'],
-                    'price'  =>  $data['price'],
-                    'images'  =>  $data['images'],
-                ];
-            }
-            return  $requiredData;
-
-        }else{
-            return  [];
-        }
-    }
-}
-
 if(!function_exists('seller_all_live_products_list')){
     function seller_all_live_products_list(){
-        $productsRawData = get_seller_all_products();
-        if(count($productsRawData)  >   0){
-            $requiredData  = [];
+        $currentUser =  session("userType");
+        $sellerEmail =  session('email');
 
-            foreach($productsRawData  as $data){
-                if($data['status'] == '1'){
-                    $requiredData[] = [
-                        'id'  =>  $data['id'],
-                        'name'  =>  $data['name'],
-                        'description'  =>  $data['description'],
-                        'price'  =>  $data['price'],
-                        'images'  =>  $data['images'],
+        $seller  =  SellerModal::where('email',$sellerEmail)->where("is_active",'1')->first();
+
+        if(!$seller){
+            return [];
+        }else{
+            $products  = ProductModal::where("sellerId",$seller->id)->where('is_active','1')->get();
+            
+            if(!$products){
+                return  [];
+            }else{
+                $requiredData = [];
+
+                foreach($products as $product){
+                    $requiredData[] =  [
+                        'id' =>  $product->id,
+                        'name' =>  $product->name,
+                        'description' =>  $product->description,
+                        'images' =>  explode(',',$product->images),
+                        'price' =>  $product->price,
+                        'views' =>  $product->views,
+                        'rating' =>  $product->rating,
                     ];
                 }
-            }
-            return  $requiredData;
 
-        }else{
-            return  [];
+                return  $requiredData;
+            }
+
         }
     }
 }
@@ -601,51 +604,14 @@ if(!function_exists('get_seller_all_products')){
                 $requiredData = [];
 
                 foreach($products as $product){
-
-                    if($product->categoryId){
-                        $category =   CategoryModal::find($product->categoryId);
-                    }
-                    
-                    if($product->subCategoryId){
-                        $subCategory =   CategoryModal::find($product->subCategoryId);
-                    }
-
-                    if($product->commentId){
-                        $commentRawData  = CommentModal::whereIn('id',explode(',',$product->commentId))->get();
-
-                        if($commentRawData->count()  >  0){
-                            $comments = [];
-                            foreach($commentRawData as $rawData){
-
-                                if($rawData->customerId){
-                                    $customer =  UserModal::find($rawData->customerId);
-                                }
-
-                                $comments[] = [
-                                    'user' => $customer->name,
-                                    'comment' => $rawData->comment,
-                                    'commentDate' => $rawData->created_at,
-                                ];
-                            }
-                        }
-
-                    }
-
                     $requiredData[] =  [
                         'id' =>  $product->id,
                         'name' =>  $product->name,
                         'description' =>  $product->description,
                         'images' =>  explode(',',$product->images),
                         'price' =>  $product->price,
-                        'discount' =>  $product->discount,
-                        'platformFee' =>  $product->platformFee,
                         'views' =>  $product->views,
-                        'number_of_customer_rate' =>  $product->number_of_customer_rate,
                         'rating' =>  $product->rating,
-                        'comments' =>  $comments  ?? [],
-                        'category' =>  $category->name ?? $product->categoryId,
-                        'subCategory' =>  $subCategory->name ?? $product->subCategoryId,
-                        'status' =>  $product->is_active,
                     ];
                 }
 
@@ -653,63 +619,73 @@ if(!function_exists('get_seller_all_products')){
             }
 
         }
-
     }
 }
 
 if(!function_exists('getFilteredProductsData')){
-    function getFilteredProductsData($queryArray) {
+    function getFilteredProductsData($queryArray,$singleQuery) {
         $query = ProductModal::query();
+
+        if(is_array($queryArray) && count($queryArray)  > 0){
+
+            if (!empty($queryArray['category'])) {
+                $category =  CategoryModal::where('name','like','%'.$queryArray['category'].'%')->first();
+                
+                if($category){
+                    $query->where('categoryId', $category->id);
+                }
     
-        if (!empty($queryArray['category'])) {
-            $category =  CategoryModal::where('name','like','%'.$queryArray['category'].'%')->first();
-            
+            }
+        
+            if (!empty($queryArray['sub_category'])) {
+                $subCategory =  SubCategoryModal::where('name','like','%'.$queryArray['sub_category'].'%')->first();
+                
+                if($subCategory){
+                    $query->where('subCategoryId', $subCategory->id);
+                }
+            }
+        
+            if (!empty($queryArray['sort'])) {
+                if ($queryArray['sort'] == 'price_asc') {
+                    $query->orderByRaw('price - (price * discount / 100) asc');
+                } elseif ($queryArray['sort'] == 'price_desc') {
+                    $query->orderByRaw('price - (price * discount / 100) desc');
+                } elseif ($queryArray['sort'] == 'rating') {
+                    $query->orderBy('rating', 'desc');
+                } elseif ($queryArray['sort'] == 'top_products') {
+                    $query->orderBy('views', 'desc');
+                }
+            }
+    
+            if (!empty($queryArray['min_price']) && !empty($queryArray['max_price'])) {
+                $query->whereRaw('price - (price * discount / 100) between ? and ?', [$queryArray['min_price'], $queryArray['max_price']]);
+            } elseif (!empty($queryArray['min_price'])) {
+                $query->whereRaw('price - (price * discount / 100) >= ?', [$queryArray['min_price']]);
+            } elseif (!empty($queryArray['max_price'])) {
+                $query->whereRaw('price - (price * discount / 100) <= ?', [$queryArray['max_price']]);
+            }
+        
+            if (!empty($queryArray['product'])) {
+                $query->where('name', 'like', '%' . $queryArray['product'] . '%');
+            }
+        
+            if (!empty($queryArray['product_id'])) {
+                $query->where('id', $queryArray['product_id']);
+            }
+        
+            if (!empty($queryArray['brand'])) {
+                $seller = SellerModal::where('brandName','like','%'.$queryArray['brand'].'%')->where('is_active','1')->first();
+                if($seller){
+                    $query->where('sellerId', $seller->id);
+                }
+            }
+
+        }else{
+            $category =  CategoryModal::where("name",$singleQuery)->where("is_active",'1')->first();
             if($category){
                 $query->where('categoryId', $category->id);
-            }
-
-        }
-    
-        if (!empty($queryArray['sub_category'])) {
-            $subCategory =  SubCategoryModal::where('name','like','%'.$queryArray['sub_category'].'%')->first();
-            
-            if($subCategory){
-                $query->where('subCategoryId', $subCategory->id);
-            }
-        }
-    
-        if (!empty($queryArray['sort'])) {
-            if ($queryArray['sort'] == 'price_asc') {
-                $query->orderByRaw('price - (price * discount / 100) asc');
-            } elseif ($queryArray['sort'] == 'price_desc') {
-                $query->orderByRaw('price - (price * discount / 100) desc');
-            } elseif ($queryArray['sort'] == 'rating') {
-                $query->orderBy('rating', 'desc');
-            } elseif ($queryArray['sort'] == 'top_products') {
-                $query->orderBy('views', 'desc');
-            }
-        }
-
-        if (!empty($queryArray['min_price']) && !empty($queryArray['max_price'])) {
-            $query->whereRaw('price - (price * discount / 100) between ? and ?', [$queryArray['min_price'], $queryArray['max_price']]);
-        } elseif (!empty($queryArray['min_price'])) {
-            $query->whereRaw('price - (price * discount / 100) >= ?', [$queryArray['min_price']]);
-        } elseif (!empty($queryArray['max_price'])) {
-            $query->whereRaw('price - (price * discount / 100) <= ?', [$queryArray['max_price']]);
-        }
-    
-        if (!empty($queryArray['product'])) {
-            $query->where('name', 'like', '%' . $queryArray['product'] . '%');
-        }
-    
-        if (!empty($queryArray['product_id'])) {
-            $query->where('id', $queryArray['product_id']);
-        }
-    
-        if (!empty($queryArray['brand'])) {
-            $seller = SellerModal::where('brandName','like','%'.$queryArray['brand'].'%')->where('is_active','1')->first();
-            if($seller){
-                $query->where('sellerId', $seller->id);
+            }else{
+                $query->where('name','like','%'.$singleQuery.'%');
             }
         }
     
@@ -717,56 +693,42 @@ if(!function_exists('getFilteredProductsData')){
 
         if($responseData->count()   >  0){
 
+            if(session()->has('userType')   &&  session()->has('email')  && session("userType") == 'user'){
+                $user  =  UserModal::where('email',session('email'))->where("is_active",'1')->first();
+
+                if($user){
+                    $cartList  = ($user->cartId) ? explode(',',$user->cartId)   : [];
+                    $whislist  = ($user->whislistId) ?  explode(",",$user->whislistId) : [];
+                }
+
+            }
+
             $requiredData  =  [];
             
             foreach($responseData as $value){
+                $in_cart  = false;
+                $in_whislist  = false;
 
-                $seller = SellerModal::find($value->sellerId);
-
-                $brandDetails =  [
-                    'brandName' => $seller->brandName,
-                    'brandLogo' => $seller->brandLogo,
-                ];
-
-                $category =  CategoryModal::find($value->categoryId)->name ?? $value->categoryId;
-                $subcategory =  SubCategoryModal::find($value->subCategoryId)->name ?? $value->subCategoryId;
-
-                $commentsRawData = CommentModal::whereIn('id',explode(',',$value->commentId))->get();
-                $comments  = [];
-
-                if($commentsRawData->count()   > 0){
-                    foreach($commentRawData as $rawData){
-
-                        if($rawData->customerId){
-                            $customer =  UserModal::find($rawData->customerId);
-                        }
-
-                        $comments[] = [
-                            'user' => $customer->name,
-                            'comment' => $rawData->comment,
-                            'commentDate' => $rawData->created_at,
-                        ];
-                    }
+                if(isset($cartList)){
+                    $in_cart =  in_array($value->id,$cartList) ? true: false;
                 }
-
-
+                
+                if(isset($whislist)){
+                    $in_whislist =  in_array($value->id,$whislist) ? true: false;
+                }
                 
 
                 $requiredData[]  =  [
                     'id'  =>  $value->id,
                     'name'  =>  $value->name,
-                    'description'  =>  $value->description,
-                    'category'  =>  $category,
-                    'subcategory'  =>  $subcategory,
-                    'brandDetails'  =>  $brandDetails,
                     'images'  =>  explode(',',$value->images),
                     'price'  =>  $value->price,
                     'discount'  =>  $value->discount,
                     'platformFee'  =>  $value->platformFee,
-                    'views'  =>  $value->views,
                     'number_of_customer_rate'  =>  $value->number_of_customer_rate,
                     'rating'  =>  $value->rating,
-                    'comments'  =>  $comments,
+                    'in_cart'  =>  $in_cart,
+                    'in_whislist'  =>  $in_whislist,
                 ];
             }
             return $requiredData;            
@@ -787,7 +749,7 @@ if(!function_exists('get_user_all_orders')){
 
         if($user){
 
-            $orders = OrderModal::where('customerId',$user->id)->where('is_active','1')->get();
+            $orders = OrderModal::where('customerId',$user->id)->where('is_active','1')->where('status','!=','cancel')->get();
 
             if($orders->count() > 0){
                 $requiredData = [];
@@ -796,36 +758,18 @@ if(!function_exists('get_user_all_orders')){
                     $product = ProductModal::where('id',$value->productId)->where('is_active','1')->first();
                     if($product){
 
-                        $sellerModal  =  SellerModal::where('id',$value->sellerId)->where('is_active','1')->first();
-
-                        $commentData = CommentModal::where('id',$value->commentId)->where('is_active','1')->first();
-                        $category = CategoryModal::where('id',$product->categoryId)->where("is_active",'1')->first();
-                        $subCategory = SubCategoryModal::where('id',$product->subCategoryId)->where("is_active",'1')->first();
-
                         $requiredData[] = [
-                            'productData'  => [
-                                'id' =>  $product->id,
-                                'name' =>  $product->name,
-                                'description' =>  $product->description,
-                                'category' =>  $category->name,
-                                'subcategory' =>  $subCategory->name,
-                                'images' =>  implode(',',$product->images),
-                                'current_price' =>  $product->price,
-                                'current_discount' =>  $product->discount,
-                                'platformFee' =>  $product->platformFee,
-                                'rating' =>  $product->rating,
-                            ],
-                            'commentData' =>  [
-                                'comment' => $commentData->comment,
-                                'date_of_comment' => $commentData->created_at,
-                            ],
-                            'orderId'  =>  $value->id,
-                            'purchase_amount'  =>  $value->amount,
-                            'rating'  =>  $value->rating_by_user,
-                            'quantity'  =>  $value->quantity,
-                            'status'  =>  $value->status,
-                            'order_date'  =>  $value->created_at,
-                            'update_date'  =>  $value->updated_at,
+                            'id' =>  $product->id,
+                            'name' =>  $product->name,
+                            'description' =>  $product->description,
+                            'images' =>  explode(',',$product->images),
+                            'price' =>  $value->amount,
+                            'discount' =>  $value->discount,
+                            'rating' =>  $product->rating,
+                            'number_of_customer_rate' =>  $product->number_of_customer_rate,
+                            'orderDetails' => [
+                                'orderId'  =>  $value->id,
+                            ]
                         ];
 
 
@@ -855,22 +799,13 @@ if(!function_exists('get_user_all_cart_products')){
                 $requiredData = [];
                 
                 foreach($cartProducts as $value){
-                    
-                    $sellerModal  =  SellerModal::where('id',$value->sellerId)->where('is_active','1')->first();
-
-                    $category = CategoryModal::where('id',$value->categoryId)->where("is_active",'1')->first();
-                    $subCategory = SubCategoryModal::where('id',$value->subCategoryId)->where("is_active",'1')->first();
-
                     $requiredData[] = [
                         'id' =>  $value->id,
                         'name' =>  $value->name,
                         'description' =>  $value->description,
-                        'category' =>  $category->name,
-                        'subcategory' =>  $subCategory->name,
-                        'images' =>  implode(',',$value->images),
-                        'current_price' =>  $value->price,
-                        'current_discount' =>  $value->discount,
-                        'platformFee' =>  $value->platformFee,
+                        'images' =>  explode(',',$value->images),
+                        'price' =>  $value->price,
+                        'discount' =>  $value->discount,
                         'rating' =>  $value->rating,
                         'number_of_customer_rate' =>  $value->number_of_customer_rate,
                     ];
@@ -900,22 +835,13 @@ if(!function_exists('get_user_all_whislist_products')){
                 $requiredData = [];
                 
                 foreach($cartProducts as $value){
-                    
-                    $sellerModal  =  SellerModal::where('id',$value->sellerId)->where('is_active','1')->first();
-
-                    $category = CategoryModal::where('id',$value->categoryId)->where("is_active",'1')->first();
-                    $subCategory = SubCategoryModal::where('id',$value->subCategoryId)->where("is_active",'1')->first();
-
                     $requiredData[] = [
                         'id' =>  $value->id,
                         'name' =>  $value->name,
                         'description' =>  $value->description,
-                        'category' =>  $category->name,
-                        'subcategory' =>  $subCategory->name,
-                        'images' =>  implode(',',$value->images),
-                        'current_price' =>  $value->price,
-                        'current_discount' =>  $value->discount,
-                        'platformFee' =>  $value->platformFee,
+                        'images' =>  explode(',',$value->images),
+                        'price' =>  $value->price,
+                        'discount' =>  $value->discount,
                         'rating' =>  $value->rating,
                         'number_of_customer_rate' =>  $value->number_of_customer_rate,
                     ];
@@ -926,5 +852,165 @@ if(!function_exists('get_user_all_whislist_products')){
             }
         }  
         return [];
+    }
+}
+
+if(!function_exists('get_user_order_details')){
+    function get_user_order_details($productName,$orderId){
+        if(session()->has('userType') && session()->has('email')){
+            $currentUser  =  session('userType');
+
+            if($currentUser !==  'user') return [];
+
+            $user =  UserModal::where('email',session('email'))->where('is_active','1')->first();
+
+            if(!$user)   return  [];
+
+            $userOrderList = explode(',',$user->orderId);
+
+            if(!in_array($orderId,$userOrderList))   return [];
+
+            $orderDetails  =  OrderModal::where('id',$orderId)->where('is_active','1')->first();
+
+            if(!$orderDetails) return  [];
+
+            $product  =  ProductModal::where('id',$orderDetails->productId)->where('is_active','1')->first();
+            if(!$product) return [];
+
+            $commentsRawData  = CommentModal::whereIn('id',explode(',',$orderDetails->commentId))->where('is_active','1')->get();
+            $comments =  [];
+
+            if($commentsRawData->count()  > 0 ){
+                foreach($commentsRawData as $value){
+                    $comments[]  =   [
+                        'comment' => $value->comment,
+                        'dateOfComment' => $value->created_at,
+                        'name' => $user->name,
+                        'picture' => $user->picture,
+                    ];
+                }
+            }
+
+            $requiredData =  [
+                'id' => $product->id,
+                'name' => $product->name,
+                'description' => $product->description,
+                'images' => explode(',',$product->images),
+                'price' => $product->price,
+                'discount' => $product->discount,
+                'number_of_customer_rate' => $product->number_of_customer_rate,
+                'rating' => $product->rating,
+                'orderDetails' => [
+                    'orderId'  =>  $orderDetails->id,
+                    'purchase_amount'  =>  $orderDetails->amount,
+                    'rating'  =>  $orderDetails->rating_by_user,
+                    'status'  =>  $orderDetails->status,
+                    'order_date'  =>  $orderDetails->created_at,
+                    'update_date'  =>  $orderDetails->updated_at,
+                    'comments' => $comments
+                ]
+            ];
+
+            return $requiredData;
+
+        }
+
+        return [];
+    }
+}
+
+if(!function_exists('get_seller_products_all_orders')){
+    function get_seller_products_all_orders(){
+        
+        if(session()->has('userType')  && session()->has('email')){
+            if(session('userType') !==  'seller')   return  [];
+
+            $seller  =  SellerModal::where('email',session('email'))->where('is_active','1')->first();
+
+            if(!$seller)  return   [];
+
+            $products  = ProductModal::where('is_active','1')->whereIn('id',explode(',',$seller->productId))->get();
+
+            if($products->count() > 0){
+                $requiredData  = [];
+
+                foreach($products  as  $product){
+
+                    $orders = OrderModal::where('productId',$product->id)->where('is_active','1')->get();
+
+                    if($orders->count()  >  0){
+                        foreach($orders as  $order){
+                            $requiredData[]  =  [
+                                'orderId' => (string) $order->id,
+                                'id' => (string) $product->id,
+                                'name' => $product->name,
+                                'description' => $product->description,
+                                'price' => $order->amount,
+                                'images' => explode(",",$product->images),
+                            ];
+                        }
+                    }
+                }
+                return  $requiredData;
+            }
+        }
+        return  [];
+    }
+}
+
+if(!function_exists('get_order_details_seller')){
+    function  get_order_details_seller($productName,$productId,$orderId){
+
+        if(session()->has('userType') && session()->has('email')  && session('userType') ==  'seller'){
+            
+            $product = ProductModal::where('name','like','%'.urldecode($productName).'%')->where('id',$productId)->where('is_active','1')->first();
+
+            $seller  = SellerModal::where('email',session('email'))->where('is_active','1')->first();
+
+            $sellerProducts =  explode(',',$seller->productId);
+
+            if(!in_array($productId,$sellerProducts)) return  [];
+
+            $order = OrderModal::where('id',$orderId)->where('sellerId',$seller->id)->where('productId',$product->id)->where("is_active",'1')->first();
+
+            if(!$order)  return  [];
+
+            $user  = UserModal::where('id',$order->customerId)->where('is_active','1')->first();
+
+            if(!$user) return  [];
+
+            $comment = CommentModal::where('orderId',$order->id)->where('productId',$product->id)->where('customerId' ,  $user->id)->where('sellerId',$seller->id)->first();
+
+            $category =  CategoryModal::where('id',$product->categoryId)->where('is_active','1')->first();
+            $subCategory =  SubCategoryModal::where('id',$product->subCategoryId)->where('is_active','1')->first();
+
+            $requiredData  =  [
+                'orderId'  =>  $order->id,
+                'name'  =>  $product->name,
+                'description'  =>  $product->description,
+                'images'  =>  explode(',',$product->images),
+                'current_price'  =>  $product->price,
+                'current_discount'  =>  $product->discount,
+                'platformFee'  =>  $product->platformFee,
+                'deliveryAddress' => $user->address,
+                'comment' => $comment->comment  ? [
+                    'comment' => $comment->comment,
+                    'name' => $user->name,
+                    'picture' => $user->picture,
+                    'dateOfComment' => $comment->created_at,
+                ] : [],
+                'order_amount' => $order->amount,
+                'rating' => $order->rating_by_user,
+                'quantity' => $order->quantity,
+                'status' => $order->status,
+                'orderDate' => $order->created_at,
+                'updateDate' => $order->updated_at,
+            ];
+
+            return  $requiredData;
+
+        }
+
+        return  [];
     }
 }

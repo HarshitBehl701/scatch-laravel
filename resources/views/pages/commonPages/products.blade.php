@@ -4,7 +4,7 @@
     $categories   = $pageData['categories'];
     if(request()->route('param1')){
         require_once app_path('Helpers/helpers.php');
-        $filterProductData  = getFilteredProductsData(request()->query());
+        $filterProductData  = getFilteredProductsData(request()->query(),request()->route('param1'));
         $productsData = (count($filterProductData) > 0)  ?  $filterProductData :  $productsData;
     }
 @endphp

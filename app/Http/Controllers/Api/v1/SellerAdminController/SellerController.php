@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\v1\SellerAdminController;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use  App\Models\Api\v1\SellerModal\SellerModal;
+use  App\Models\Api\v1\OrderModal\OrderModal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
@@ -157,5 +158,22 @@ class SellerController extends Controller
             return back()->with('error',$e->getMessage());
         }
 
+    }
+
+    public function  updateOrderStatus($newStatus,$orderId){
+        
+        $seller  = SellerModal::where('email',session('email'))->where('is_active','1')->first();
+
+        if(!$seller) return back()->with('error','Some Error  Occured');
+
+        $order   =   OrderModal::where('id',$orderId)->where("is_active",'1')->first();
+
+        if(!$order) return back()->with('error','Order Not Found');
+
+        if($order->status == 'deliverd' &&  $order->status  ==  'cancel')  return  back()->with('error','Status  Cannot Be   Change  After  Being  Marked As   Cancelled  Or   Delivered');
+
+        $order->status  = $newStatus;
+        $order->save();
+        return   back()->with('success','Successfully  Updated The  Order  Status');
     }
 }

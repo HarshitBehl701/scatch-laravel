@@ -38,7 +38,7 @@
     <!-- Product Form Section -->
       <div>
         <label for="name" class="block text-sm font-medium text-gray-700">Product Name</label>
-        <input type="text" id="name" name="name" value="{{old('name')  ??  $productDetail['name']}}"
+        <input type="text" id="name" name="name" value="{{old('name')  ??  $productDetail['name'] ?? ''}}"
                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500" 
                placeholder="Enter product name" />
         @error('name')
@@ -58,7 +58,7 @@
           id="{{ Str::slug($category['name']) }}" 
           data-subcategories-selected="{{ old('subCategory') ?? $productDetail['subcategory'] ?? '' }}" 
           data-subcategories="{{ json_encode($category['subCategories']) }}" 
-          {{ $category['name'] == old('category') || $category['name'] == $productDetail['category'] ? 'selected' : '' }}>
+          {{ $category['name'] == old('category') || (array_key_exists('category',$productDetail) &&  $category['name'] == $productDetail['category']) ? 'selected' : '' }}>
           {{ ucfirst($category['name']) }}
           </option>
 
@@ -82,7 +82,7 @@
   
       <div>
         <label for="price" class="block text-sm font-medium text-gray-700">Price</label>
-        <input type="number" id="price" name="price" value="{{old('price')  ?? $productDetail['price']}}" 
+        <input type="number" id="price" name="price" value="{{old('price')  ?? $productDetail['price'] ?? ''}}" 
                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500" 
                placeholder="Enter price" />
                @error('price')
@@ -92,7 +92,7 @@
   
       <div>
         <label for="discount" class="block text-sm font-medium text-gray-700">Discount (%)</label>
-        <input type="number" id="discount" name="discount" value="{{old('discount')??  $productDetail['discount']}}"
+        <input type="number" id="discount" name="discount" value="{{old('discount')??  $productDetail['discount']   ??   ''}}"
                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500" 
                placeholder="Enter discount" />
                @error('discount')
@@ -104,7 +104,7 @@
         <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
         <textarea id="description" name="description" rows="3"
                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500" 
-                  placeholder="Enter product description">{{old('name')  ?? $productDetail['description']}}</textarea>
+                  placeholder="Enter product description">{{old('name')  ?? $productDetail['description']   ??  ''}}</textarea>
                   @error('description')
             <small class="text-red-600">{{$message}}</small>
         @enderror

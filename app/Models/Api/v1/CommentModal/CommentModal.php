@@ -12,6 +12,7 @@ class CommentModal extends Model
     'customerId',
     'productId',
     'sellerId',
+    'orderId',
     'comment',
     'is_active'
     ];
