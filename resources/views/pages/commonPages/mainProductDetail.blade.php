@@ -7,11 +7,11 @@
     
     $cartBtnLink =  '/login';
     $whislistBtnLink =  '/login';
-    $buttonText =  'Login  First To Add To Cart';
     $in_cart =   false;
     $in_whislist =   false;
-
+    
     if(session()->has('userType')  && session()->has('email')){
+        $buttonText =  'Add To Cart';
         $cartBtnLink = '/user/manage_cart/add/'.urlencode($productDetail['name']).'/'.$productDetail['id'];
         $whislistBtnLink = '/user/manage_whislist/add/'.urlencode($productDetail['name']).'/'.$productDetail['id'];
         $in_cart = $productDetail['in_cart'];
@@ -25,7 +25,9 @@
         if($in_whislist){
             $whislistBtnLink = '/user/manage_whislist/remove/'.urlencode($productDetail['name']).'/'.$productDetail['id'];
         }
-
+        
+    }else{
+        $buttonText =  'Login First To Add To Cart';
     }
 
 @endphp
@@ -79,7 +81,7 @@
     <div class="rightSection w-full md:w-[60%]">
         <div class="header flex items-center justify-between gap-3">
             <h1 class="text-3xl">{{$productDetail['name']}}</h1>
-        @if (session()->has('userType')  && session()->has('email'))
+        @if (session()->has('userType')  && session()->has('email')  &&  session('userType') == 'user')
         <a   href="{{$whislistBtnLink}}" class="inline-block   bg-white p-2 rounded-full shadow-smbg-white">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="{{$in_whislist ? 'red' :  'black'}}">
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -97,9 +99,11 @@
                     <small class="text-gray-500">({{$productDetail['number_of_customer_rate']}})</small>
                 </span></li>
             <li  class="flex mb-1 justify-between text-xl items-center flex-wrap "><span>Price</span><span  class="w-1/2   text-right">{{$productDetail['price'] - ($productDetail['discount']/100)*$productDetail['price'] - $productDetail['platformFee']}}  <small  class="line-through">({{$productDetail['price']}})</small></span></li>
+            @if (session()->has('userType')  && session()->has('email')  &&  session('userType') == 'user')
             <li   class="flex mb-1 justify-end  mt-3">
                 <a href="{{$cartBtnLink}}" class="{{$in_cart ? "bg-red-600 hover:bg-red-700"  : "bg-blue-600 hover:bg-blue-700"}} cursor-pointer inline-block  px-2  py-1  rounded-md  shadow-sm text-white font-semibold">{{$buttonText}}</a>
             </li>
+            @endif
         </ul>
     </div>
 </div>

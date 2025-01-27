@@ -15,7 +15,7 @@
     <div class="flex items-center">
         <!-- Profile Image Upload -->
         <div class="p-6 flex flex-col items-center  justify-center">
-            <form action="{{route('seller.uploadProfileImage')}}" id="imageUploadForm" method="post" enctype="multipart/form-data">
+            <form action="{{$currentUserType == 'user' ? route('user.uploadProfileImage') : route('seller.uploadProfileImage')}}" id="imageUploadForm" method="post" enctype="multipart/form-data">
                 @csrf
                 <div class="w-44 h-44 rounded-md overflow-hidden border border-gray-300 shadow-sm relative group">
                 <!-- Hidden File Input -->
